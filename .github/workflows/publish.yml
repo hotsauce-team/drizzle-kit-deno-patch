@@ -41,7 +41,7 @@ jobs:
           echo "✅ Version $TAG_VERSION matches"
 
       - name: Run tests
-        run: deno task test --quick
+        run: deno task test
 
       - name: Publish to JSR (dry run)
         if: github.event.inputs.dry-run == 'true'
