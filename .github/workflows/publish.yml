@@ -3,15 +3,15 @@ name: Publish to JSR
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    
+
     permissions:
       contents: read
-      id-token: write  # Required for JSR provenance
+      id-token: write # Required for JSR provenance
 
     steps:
       - name: Checkout

@@ -2,9 +2,13 @@
 
 A patch to make **drizzle-kit** compatible with **Deno**.
 
-> ⚠️ **Warning:** This patch modifies drizzle-kit's bundled code. Only use in production if you understand exactly what the patch does. Review [scripts/patch-drizzle-kit.ts](scripts/patch-drizzle-kit.ts) before deploying.
+> ⚠️ **Warning:** This patch modifies drizzle-kit's bundled code. Only use in
+> production if you understand exactly what the patch does. Review
+> [scripts/patch-drizzle-kit.ts](scripts/patch-drizzle-kit.ts) before deploying.
 
-> ℹ️ **Supported commands:** Only `generate` and `migrate` are supported. Other drizzle-kit commands (`push`, `pull`, `studio`, etc.) have not been tested and will probably not work.
+> ℹ️ **Supported commands:** Only `generate` and `migrate` are supported. Other
+> drizzle-kit commands (`push`, `pull`, `studio`, etc.) have not been tested and
+> will probably not work.
 
 ## Installation
 
@@ -42,17 +46,22 @@ deno run --allow-read --allow-write --allow-env ./node_modules/drizzle-kit/bin.c
 
 Drizzle-kit is designed for Node.js and has several incompatibilities with Deno:
 
-1. **`require()` calls** - Deno doesn't support CommonJS `require()` for TypeScript files
-2. **esbuild dependency** - Uses esbuild for TypeScript transpilation (Deno has native TS support)
-3. **Directory traversal** - Walks parent directories looking for tsconfig.json (permission issues)
-4. **Eager environment checks** - Several libraries check env vars at load time (dotenv, chalk, etc.)
+1. **`require()` calls** - Deno doesn't support CommonJS `require()` for
+   TypeScript files
+2. **esbuild dependency** - Uses esbuild for TypeScript transpilation (Deno has
+   native TS support)
+3. **Directory traversal** - Walks parent directories looking for tsconfig.json
+   (permission issues)
+4. **Eager environment checks** - Several libraries check env vars at load time
+   (dotenv, chalk, etc.)
 5. **Blocking event loop** - Commands don't exit cleanly after completion
 
 ## The Solution
 
 A patch script that modifies drizzle-kit's bundled `bin.cjs` file to:
 
-1. Disable `walkForTsConfig` and `recursivelyResolveSync` (prevents permission issues)
+1. Disable `walkForTsConfig` and `recursivelyResolveSync` (prevents permission
+   issues)
 2. Disable `safeRegister` (removes esbuild dependency)
 3. Replace `require()` with `import()` for loading TS config and schema files
 4. Stub color support functions to avoid env var checks at load time
@@ -61,7 +70,8 @@ A patch script that modifies drizzle-kit's bundled `bin.cjs` file to:
 
 ## Features
 
-- **JSR packages in schema** - Your schema files can import from JSR (`@std/*`, etc.) since Deno handles the imports natively
+- **JSR packages in schema** - Your schema files can import from JSR (`@std/*`,
+  etc.) since Deno handles the imports natively
 
 ## Project Structure
 
@@ -80,7 +90,10 @@ A patch script that modifies drizzle-kit's bundled `bin.cjs` file to:
 ## Programmatic Usage
 
 ```typescript
-import { patchDrizzleKit, SUPPORTED_VERSIONS } from "jsr:@hotsauce/drizzle-kit-deno-patch";
+import {
+  patchDrizzleKit,
+  SUPPORTED_VERSIONS,
+} from "jsr:@hotsauce/drizzle-kit-deno-patch";
 
 console.log("Supported versions:", SUPPORTED_VERSIONS);
 await patchDrizzleKit();
@@ -90,7 +103,8 @@ await patchDrizzleKit();
 
 ### Permission Sets
 
-The [example/deno.jsonc](example/deno.jsonc) defines permission sets to limit what drizzle-kit can access:
+The [example/deno.jsonc](example/deno.jsonc) defines permission sets to limit
+what drizzle-kit can access:
 
 ```jsonc
 "permissions": {
@@ -103,7 +117,8 @@ The [example/deno.jsonc](example/deno.jsonc) defines permission sets to limit wh
 }
 ```
 
-This allows fine-grained control over file system access, environment variables, and network access.
+This allows fine-grained control over file system access, environment variables,
+and network access.
 
 ### The Patch Script
 
@@ -137,7 +152,8 @@ run([...]).then(() => { setTimeout(() => process.exit(0), 50); });
 
 ### Running drizzle-kit
 
-Instead of running `drizzle-kit generate`, you run the binary directly with Deno:
+Instead of running `drizzle-kit generate`, you run the binary directly with
+Deno:
 
 ```bash
 # Node.js way (doesn't work with Deno)
@@ -147,7 +163,8 @@ npx drizzle-kit generate
 deno run --permission-set=drizzle-kit ./node_modules/drizzle-kit/bin.cjs generate
 ```
 
-The `--permission-set=drizzle-kit` flag uses the permissions defined in `deno.jsonc`.
+The `--permission-set=drizzle-kit` flag uses the permissions defined in
+`deno.jsonc`.
 
 ## Supported drizzle-kit versions
 
@@ -158,7 +175,8 @@ The patch script will warn but attempt to patch other versions.
 
 ## Testing
 
-A comprehensive test suite verifies the patch works across all supported drizzle-kit versions.
+A comprehensive test suite verifies the patch works across all supported
+drizzle-kit versions.
 
 ### Testing Strategy
 
@@ -169,8 +187,10 @@ The test suite performs the following checks for each version:
 3. **Patch** - Applies the patch script and verifies it completes successfully
 4. **Verify Marker** - Checks that the patch marker is present in `bin.cjs`
 5. **Verify All Patches** - Confirms each individual patch was applied:
-   - Critical patches (must succeed): `walkForTsConfig`, `safeRegister`, `config loading`, `CLI exit handler`
-   - Optional patches (may vary by version): color stubs, dotenv stubs, homedir/tmpdir deferrals
+   - Critical patches (must succeed): `walkForTsConfig`, `safeRegister`,
+     `config loading`, `CLI exit handler`
+   - Optional patches (may vary by version): color stubs, dotenv stubs,
+     homedir/tmpdir deferrals
 6. **Runtime Tests** (full mode only):
    - `drizzle-kit --help` - Verifies basic CLI functionality
    - `drizzle-kit generate` - Verifies config and schema loading works
@@ -206,26 +226,30 @@ Options:
 
 Tests run automatically via GitHub Actions:
 
-- **On push to `main`** - Full tests for all supported versions (when patch files change)
+- **On push to `main`** - Full tests for all supported versions (when patch
+  files change)
 - **On pull requests** - Full tests in parallel matrix + quick smoke test
 - **Manual trigger** - Can be run manually via workflow dispatch
 
 Each version is tested in parallel using a matrix strategy for faster feedback.
 
-See [.github/workflows/test-patch.yml](.github/workflows/test-patch.yml) for the CI configuration.
+See [.github/workflows/test-patch.yml](.github/workflows/test-patch.yml) for the
+CI configuration.
 
 ## Troubleshooting
 
 ### "Pattern not found" errors
 
-The patch script uses regex patterns to find code to patch. If drizzle-kit's code changes significantly, patterns may not match. Check:
+The patch script uses regex patterns to find code to patch. If drizzle-kit's
+code changes significantly, patterns may not match. Check:
 
 1. Is the drizzle-kit version supported?
 2. Has the bundled code structure changed?
 
 ### Permission denied errors
 
-Make sure your permission set includes all required paths and env vars. Use `DENO_TRACE_PERMISSIONS=1` to see which permissions are being requested:
+Make sure your permission set includes all required paths and env vars. Use
+`DENO_TRACE_PERMISSIONS=1` to see which permissions are being requested:
 
 ```bash
 DENO_TRACE_PERMISSIONS=1 deno run --permission-set=drizzle-kit ./node_modules/drizzle-kit/bin.cjs generate
@@ -233,14 +257,19 @@ DENO_TRACE_PERMISSIONS=1 deno run --permission-set=drizzle-kit ./node_modules/dr
 
 ### Command hangs after completion
 
-The "CLI exit handler" patch adds `process.exit(0)` after commands complete. If this patch fails, drizzle-kit may hang. Check the patch results for failures.
+The "CLI exit handler" patch adds `process.exit(0)` after commands complete. If
+this patch fails, drizzle-kit may hang. Check the patch results for failures.
 
 ## Why This Approach?
 
-Deno has excellent Node.js compatibility, but drizzle-kit's architecture poses challenges:
+Deno has excellent Node.js compatibility, but drizzle-kit's architecture poses
+challenges:
 
 1. **Bundled code** - drizzle-kit ships a single bundled `bin.cjs` file
-2. **Load-time side effects** - Many operations happen at import time, before any CLI logic runs
-3. **CommonJS assumptions** - Uses `require()` for dynamic imports of user config files
+2. **Load-time side effects** - Many operations happen at import time, before
+   any CLI logic runs
+3. **CommonJS assumptions** - Uses `require()` for dynamic imports of user
+   config files
 
-Patching the binary directly is the most reliable solution until drizzle-kit adds official Deno support.
+Patching the binary directly is the most reliable solution until drizzle-kit
+adds official Deno support.

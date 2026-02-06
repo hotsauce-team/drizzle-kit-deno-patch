@@ -1,6 +1,7 @@
 # Drizzle-Kit + Deno Example
 
-This example demonstrates how to use **drizzle-kit** with **Deno** using the `@hotsauce/drizzle-kit-deno-patch` patch.
+This example demonstrates how to use **drizzle-kit** with **Deno** using the
+`@hotsauce/drizzle-kit-deno-patch` patch.
 
 ## Setup
 
@@ -36,9 +37,12 @@ deno task db:migrate
 
 ## How it works
 
-The `deno task patch` command runs the `@hotsauce/drizzle-kit-deno-patch` package, which patches drizzle-kit's bundled `bin.cjs` file for Deno compatibility.
+The `deno task patch` command runs the `@hotsauce/drizzle-kit-deno-patch`
+package, which patches drizzle-kit's bundled `bin.cjs` file for Deno
+compatibility.
 
-After patching, you can run drizzle-kit commands using the permission set defined in `deno.jsonc`:
+After patching, you can run drizzle-kit commands using the permission set
+defined in `deno.jsonc`:
 
 ```bash
 deno run --permission-set=drizzle-kit ./node_modules/drizzle-kit/bin.cjs generate

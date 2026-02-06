@@ -5,10 +5,10 @@
 
     // Step 2: Patch drizzle-kit for Deno compatibility
     "patch": "deno run --allow-read=./node_modules --allow-write=./node_modules/.deno/drizzle-kit@0.31.8 jsr:@hotsauce/drizzle-kit-deno-patch",
-    
+
     // Step 3: Generate migrations from schema changes
     "db:generate": "deno run --permission-set=drizzle-kit ./node_modules/drizzle-kit/bin.cjs generate",
-    
+
     // Step 4: Apply migrations to the database
     "db:migrate": "deno run --permission-set=drizzle-kit ./node_modules/drizzle-kit/bin.cjs migrate"
   },
@@ -23,21 +23,21 @@
   },
   // Use local node_modules for npm packages (required for patching)
   "nodeModulesDir": "auto",
-  
+
   // Permission sets for running drizzle-kit with minimal permissions
   "permissions": {
     "drizzle-kit": {
       "read": [
-        "."                    // Read schema and project files
+        "." // Read schema and project files
       ],
       "write": [
-        "./drizzle",           // Write new migrations
-        "./data"               // Write to local database (if using PGlite)
+        "./drizzle", // Write new migrations
+        "./data" // Write to local database (if using PGlite)
       ],
       "env": [
         // Database connection
         "DATABASE_URL",
-        
+
         // drizzle-kit internals
         "CI",
         "TEST_CONFIG_PATH_PREFIX",

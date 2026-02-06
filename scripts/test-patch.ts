@@ -151,7 +151,10 @@ async function copyPatchScript(testDir: string): Promise<StepResult> {
     await Deno.mkdir(`${testDir}/scripts`, { recursive: true });
 
     // Write patch script
-    await Deno.writeTextFile(`${testDir}/scripts/patch-drizzle-kit.ts`, patchScript);
+    await Deno.writeTextFile(
+      `${testDir}/scripts/patch-drizzle-kit.ts`,
+      patchScript,
+    );
 
     return {
       name: "Copy patch script",
@@ -187,7 +190,9 @@ async function runPatchScript(testDir: string): Promise<StepResult> {
   return {
     name: "Apply patch",
     success,
-    error: success ? undefined : result.stderr || "Patch did not complete successfully",
+    error: success
+      ? undefined
+      : result.stderr || "Patch did not complete successfully",
     output: result.stdout,
   };
 }
@@ -229,20 +234,49 @@ async function verifyPatchMarker(testDir: string): Promise<StepResult> {
 
 // Critical patches that MUST be present for drizzle-kit to work
 const CRITICAL_PATCH_MARKERS = [
-  { name: "walkForTsConfig", pattern: "return void 0; // PATCHED: disabled for Deno" },
-  { name: "safeRegister", pattern: "return { unregister: () => {} }; // PATCHED: esbuild disabled for Deno" },
+  {
+    name: "walkForTsConfig",
+    pattern: "return void 0; // PATCHED: disabled for Deno",
+  },
+  {
+    name: "safeRegister",
+    pattern:
+      "return { unregister: () => {} }; // PATCHED: esbuild disabled for Deno",
+  },
   { name: "config loading", pattern: "// PATCHED: import for Deno TS support" },
-  { name: "CLI exit handler", pattern: "setTimeout(() => process.exit(0), 50)" },
+  {
+    name: "CLI exit handler",
+    pattern: "setTimeout(() => process.exit(0), 50)",
+  },
 ];
 
 // Non-critical patches (may not be present in all versions)
 const OPTIONAL_PATCH_MARKERS = [
-  { name: "recusivelyResolveSync", pattern: "return null; // PATCHED: disabled for Deno" },
-  { name: "_supportsColor stub", pattern: "// PATCHED: Return color level 3 (truecolor)" },
-  { name: "supportsColor2 stub", pattern: "// PATCHED: Return color level 3 (truecolor) without checking env vars for Deno" },
-  { name: "bufferutil skip", pattern: "/* PATCHED: skip bufferutil for Deno */" },
-  { name: "dotenv stub", pattern: "// PATCHED: Skip DOTENV_CONFIG_* env checks for Deno" },
-  { name: "homedir defer", pattern: "// PATCHED: deferred for Deno - will be set on first use" },
+  {
+    name: "recusivelyResolveSync",
+    pattern: "return null; // PATCHED: disabled for Deno",
+  },
+  {
+    name: "_supportsColor stub",
+    pattern: "// PATCHED: Return color level 3 (truecolor)",
+  },
+  {
+    name: "supportsColor2 stub",
+    pattern:
+      "// PATCHED: Return color level 3 (truecolor) without checking env vars for Deno",
+  },
+  {
+    name: "bufferutil skip",
+    pattern: "/* PATCHED: skip bufferutil for Deno */",
+  },
+  {
+    name: "dotenv stub",
+    pattern: "// PATCHED: Skip DOTENV_CONFIG_* env checks for Deno",
+  },
+  {
+    name: "homedir defer",
+    pattern: "// PATCHED: deferred for Deno - will be set on first use",
+  },
   { name: "lazy homedir", pattern: "_getHomedir()," },
   { name: "lazy tmpdir", pattern: "_getTmpdir()," },
 ];
@@ -258,7 +292,7 @@ async function verifyAllPatches(testDir: string): Promise<StepResult> {
     ) {
       if (entry.isFile) {
         const content = await Deno.readTextFile(entry.path);
-        
+
         const missingCritical: string[] = [];
         const missingOptional: string[] = [];
         const foundPatches: string[] = [];
@@ -286,14 +320,19 @@ async function verifyAllPatches(testDir: string): Promise<StepResult> {
             name: "Verify all patches applied",
             success: false,
             error: `Missing critical patches: ${missingCritical.join(", ")}`,
-            output: `Found: ${foundPatches.join(", ")}\nMissing optional: ${missingOptional.join(", ")}`,
+            output: `Found: ${foundPatches.join(", ")}\nMissing optional: ${
+              missingOptional.join(", ")
+            }`,
           };
         }
 
         return {
           name: "Verify all patches applied",
           success: true,
-          output: `Critical: ${CRITICAL_PATCH_MARKERS.length}/${CRITICAL_PATCH_MARKERS.length}, Optional: ${OPTIONAL_PATCH_MARKERS.length - missingOptional.length}/${OPTIONAL_PATCH_MARKERS.length}`,
+          output:
+            `Critical: ${CRITICAL_PATCH_MARKERS.length}/${CRITICAL_PATCH_MARKERS.length}, Optional: ${
+              OPTIONAL_PATCH_MARKERS.length - missingOptional.length
+            }/${OPTIONAL_PATCH_MARKERS.length}`,
         };
       }
     }
@@ -329,12 +368,15 @@ async function testDrizzleKitHelp(testDir: string): Promise<StepResult> {
   );
 
   const output = result.stdout + result.stderr;
-  const success = output.includes("drizzle-kit") || output.includes("generate") || output.includes("migrate");
+  const success = output.includes("drizzle-kit") ||
+    output.includes("generate") || output.includes("migrate");
 
   return {
     name: "Test drizzle-kit --help",
     success,
-    error: success ? undefined : result.stderr || "Help command did not produce expected output",
+    error: success
+      ? undefined
+      : result.stderr || "Help command did not produce expected output",
     output: result.stdout.slice(0, 500), // Truncate for readability
   };
 }
@@ -449,7 +491,12 @@ async function testVersion(
     steps.push(helpResult);
     if (!helpResult.success) {
       console.log(`  ❌ Failed: ${helpResult.error}`);
-      return { version, steps, duration: Date.now() - startTime, success: false };
+      return {
+        version,
+        steps,
+        duration: Date.now() - startTime,
+        success: false,
+      };
     }
     console.log("  ✓ Help command works");
 
@@ -459,13 +506,22 @@ async function testVersion(
     steps.push(generateResult);
     if (!generateResult.success) {
       console.log(`  ❌ Failed: ${generateResult.error}`);
-      return { version, steps, duration: Date.now() - startTime, success: false };
+      return {
+        version,
+        steps,
+        duration: Date.now() - startTime,
+        success: false,
+      };
     }
     console.log("  ✓ Generate command works");
   }
 
   const duration = Date.now() - startTime;
-  console.log(`\n✅ drizzle-kit@${version} passed all tests (${(duration / 1000).toFixed(1)}s)`);
+  console.log(
+    `\n✅ drizzle-kit@${version} passed all tests (${
+      (duration / 1000).toFixed(1)
+    }s)`,
+  );
 
   return { version, steps, duration, success: true };
 }
@@ -525,7 +581,9 @@ Examples:
   console.log("║        drizzle-kit Patch Compatibility Test Suite          ║");
   console.log("╚════════════════════════════════════════════════════════════╝");
   console.log(`\nVersions to test: ${versionsToTest.join(", ")}`);
-  console.log(`Mode: ${args.quick ? "Quick (patch only)" : "Full (patch + runtime)"}`);
+  console.log(
+    `Mode: ${args.quick ? "Quick (patch only)" : "Full (patch + runtime)"}`,
+  );
 
   const results: TestResult[] = [];
 
@@ -562,7 +620,9 @@ Examples:
   }
 
   console.log("\n" + "─".repeat(60));
-  console.log(`Total: ${results.length} | Passed: ${passed.length} | Failed: ${failed.length}`);
+  console.log(
+    `Total: ${results.length} | Passed: ${passed.length} | Failed: ${failed.length}`,
+  );
 
   // Cleanup unless --keep flag
   if (!args.keep) {

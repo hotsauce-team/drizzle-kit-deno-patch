@@ -14,7 +14,10 @@
  * ```
  */
 
-export { patchDrizzleKit, SUPPORTED_VERSIONS } from "./scripts/patch-drizzle-kit.ts";
+export {
+  patchDrizzleKit,
+  SUPPORTED_VERSIONS,
+} from "./scripts/patch-drizzle-kit.ts";
 
 // Run when executed directly
 if (import.meta.main) {

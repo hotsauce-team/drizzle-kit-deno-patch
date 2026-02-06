@@ -84,7 +84,17 @@ function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-async function patchDrizzleKit() {
+/**
+ * Patches the installed `drizzle-kit` binary to be runnable under Deno.
+ *
+ * This modifies the bundled `bin.cjs` inside your local `node_modules` in-place.
+ * It is safe to run multiple times; if the current patch marker is present it
+ * exits early.
+ *
+ * @throws Exits the process via `Deno.exit(1)` if drizzle-kit cannot be found,
+ * or if a critical patch cannot be applied.
+ */
+export async function patchDrizzleKit() {
   const result = await findDrizzleKitBin();
 
   if (!result) {
@@ -404,8 +414,6 @@ var _getTmpdir = () => { if (!tmpdir) tmpdir = import_node_os2.default.tmpdir();
     console.log("\n✅ Patched drizzle-kit successfully");
   }
 }
-
-export { patchDrizzleKit };
 
 // Run when executed directly
 if (import.meta.main) {
