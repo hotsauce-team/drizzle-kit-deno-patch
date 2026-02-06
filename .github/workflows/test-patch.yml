@@ -56,6 +56,9 @@ jobs:
       - name: Install dependencies
         run: deno install
 
+      - name: Cache test script dependencies
+        run: deno cache scripts/test-patch.ts
+
       - name: Run patch test for drizzle-kit@${{ matrix.version }}
         run: deno run -A scripts/test-patch.ts ${{ matrix.version }}
 
@@ -76,6 +79,9 @@ jobs:
 
       - name: Install dependencies
         run: deno install
+
+      - name: Cache test script dependencies
+        run: deno cache scripts/test-patch.ts
 
       - name: Run quick patch tests
         run: deno run -A scripts/test-patch.ts --quick
