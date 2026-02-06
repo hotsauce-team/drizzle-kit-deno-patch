@@ -179,7 +179,10 @@ async function runPatchScript(testDir: string): Promise<StepResult> {
   );
 
   const output = result.stdout + result.stderr;
-  const success = result.success && output.includes("Patched drizzle-kit successfully");
+  const success = result.success && (
+    output.includes("Patched drizzle-kit successfully") ||
+    output.includes("already patched")
+  );
 
   return {
     name: "Apply patch",
@@ -549,7 +552,10 @@ Examples:
       if (failedStep) {
         console.log(`         └─ Failed at: ${failedStep.name}`);
         if (failedStep.error) {
-          console.log(`            Error: ${failedStep.error.slice(0, 100)}`);
+          console.log(`            Error: ${failedStep.error}`);
+        }
+        if (failedStep.output) {
+          console.log(`            Output: ${failedStep.output}`);
         }
       }
     }
