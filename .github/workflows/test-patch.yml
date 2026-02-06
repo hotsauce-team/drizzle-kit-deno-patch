@@ -59,6 +59,9 @@ jobs:
       - name: Cache test script dependencies
         run: deno cache --config deno.jsonc scripts/test-patch.ts
 
+      - name: Clean test directory
+        run: rm -rf .test-patch
+
       - name: Run patch test for drizzle-kit@${{ matrix.version }}
         run: deno run --allow-read=scripts,deno.jsonc,.test-patch --allow-write=.test-patch --allow-run=deno --allow-net scripts/test-patch.ts ${{ matrix.version }}
 
@@ -82,6 +85,9 @@ jobs:
 
       - name: Cache test script dependencies
         run: deno cache --config deno.jsonc scripts/test-patch.ts
+
+      - name: Clean test directory
+        run: rm -rf .test-patch
 
       - name: Run quick patch tests
         run: deno run --allow-read=scripts,deno.jsonc,.test-patch --allow-write=.test-patch --allow-run=deno --allow-net scripts/test-patch.ts --quick
