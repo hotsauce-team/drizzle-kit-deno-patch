@@ -131,7 +131,7 @@ jobs:
         run: rm -rf ~/.cache/deno/npm/registry.npmjs.org/drizzle-kit
 
       - name: Run LibSQL test for drizzle-kit@${{ matrix.version }}
-        run: deno run --allow-read=scripts,deno.jsonc,.test-patch-sqlite --allow-write=.test-patch-sqlite --allow-run=deno --allow-net scripts/libsql/test-patch.ts ${{ matrix.version }}
+        run: deno run --allow-read=scripts,deno.jsonc,.test-patch-sqlite --allow-write=.test-patch-sqlite --allow-run=deno --allow-net --allow-env scripts/libsql/test-patch.ts ${{ matrix.version }}
 
   # Optional: Run quick tests for all versions in a single job
   test-patch-quick:
