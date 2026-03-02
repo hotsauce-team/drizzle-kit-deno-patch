@@ -18,7 +18,7 @@ import { parseArgs } from "@std/cli/parse-args";
 const SUPPORTED_VERSIONS = ["0.30.6", "0.31.8", "0.31.9"];
 
 // Available command tests
-const AVAILABLE_TESTS = ["help", "generate", "migrate"] as const;
+const AVAILABLE_TESTS = ["help", "generate", "migrate", "push", "pull"] as const;
 type TestName = (typeof AVAILABLE_TESTS)[number];
 
 // Test configuration
@@ -130,6 +130,35 @@ export default defineConfig({
 });
 `;
   await Deno.writeTextFile(`${versionDir}/drizzle.config.ts`, config);
+
+  // Create push-specific config that uses separate DB
+  const pushConfig = `
+import { defineConfig } from "drizzle-kit";
+
+export default defineConfig({
+  schema: "./schema.ts",
+  out: "./drizzle",
+  dialect: "sqlite",
+  dbCredentials: {
+    url: "file:./data-push.db",
+  },
+});
+`;
+  await Deno.writeTextFile(`${versionDir}/drizzle-push.config.ts`, pushConfig);
+
+  // Create pull-specific config that reads from push DB and outputs to drizzle-pull
+  const pullConfig = `
+import { defineConfig } from "drizzle-kit";
+
+export default defineConfig({
+  out: "./drizzle-pull",
+  dialect: "sqlite",
+  dbCredentials: {
+    url: "file:./data-push.db",
+  },
+});
+`;
+  await Deno.writeTextFile(`${versionDir}/drizzle-pull.config.ts`, pullConfig);
 
   // Create drizzle output directory
   await Deno.mkdir(`${versionDir}/drizzle`, { recursive: true });
@@ -327,6 +356,140 @@ async function verifyDatabaseSchema(testDir: string): Promise<StepResult> {
   };
 }
 
+async function testDrizzleKitPush(testDir: string): Promise<StepResult> {
+  // Test that drizzle-kit push works (pushes schema directly to DB)
+  // Uses separate DB so it doesn't interfere with migrate tests
+  const result = await runCommand(
+    [
+      "deno",
+      "run",
+      "--allow-env",
+      "--allow-read=.,./node_modules",
+      "--allow-write=./data-push.db,./data-push.db-journal,./drizzle",
+      "--allow-ffi",
+      "./node_modules/drizzle-kit/bin.cjs",
+      "push",
+      "--config=drizzle-push.config.ts",
+      "--force",
+    ],
+    { cwd: testDir, timeout: 60_000, env: { LIBSQL_JS_NODE: "1" } }
+  );
+
+  // Trust exit code; DB verification is the real correctness check
+  return {
+    name: "Test drizzle-kit push",
+    success: result.success,
+    error: result.success ? undefined : result.stderr || "Push command failed",
+    output: (result.stdout + result.stderr).slice(0, 500),
+  };
+}
+
+async function verifyPushDatabaseSchema(testDir: string): Promise<StepResult> {
+  // Verify DB schema created by push (uses separate data-push.db)
+  // Note: push doesn't create __drizzle_migrations table, so we skip that check
+  const result = await runCommand(
+    [
+      "deno",
+      "run",
+      "--allow-env",
+      "--allow-read=.,./node_modules",
+      "--allow-write=./data-push.db,./data-push.db-journal",
+      "--allow-ffi",
+      "./verify-db.ts",
+      "--db", "./data-push.db",
+      "--skip-migrations",
+    ],
+    { cwd: testDir, timeout: 30_000 }
+  );
+
+  const output = result.stdout + result.stderr;
+  const success = result.success && output.includes("Verified DB schema");
+
+  return {
+    name: "Verify push DB schema",
+    success,
+    error: success ? undefined : result.stderr || "Push DB schema verification failed",
+    output: output.slice(0, 500),
+  };
+}
+
+async function testDrizzleKitPull(testDir: string): Promise<StepResult> {
+  // Test that drizzle-kit pull works (introspects DB and generates schema)
+  // Uses push DB which has schema from previous push test
+  const result = await runCommand(
+    [
+      "deno",
+      "run",
+      "--allow-env",
+      "--allow-read=.,./node_modules",
+      "--allow-write=./drizzle-pull",
+      "--allow-ffi",
+      "./node_modules/drizzle-kit/bin.cjs",
+      "pull",
+      "--config=drizzle-pull.config.ts",
+    ],
+    { cwd: testDir, timeout: 60_000, env: { LIBSQL_JS_NODE: "1" } }
+  );
+
+  // Trust exit code; output verification is the real correctness check
+  return {
+    name: "Test drizzle-kit pull",
+    success: result.success,
+    error: result.success ? undefined : result.stderr || "Pull command failed",
+    output: (result.stdout + result.stderr).slice(0, 500),
+  };
+}
+
+async function verifyPullOutput(testDir: string): Promise<StepResult> {
+  // Verify that pull created schema file(s) in drizzle-pull/
+  const pullDir = `${testDir}/drizzle-pull`;
+  
+  try {
+    const entries: string[] = [];
+    for await (const entry of Deno.readDir(pullDir)) {
+      entries.push(entry.name);
+    }
+    
+    // Should have schema.ts and possibly relations.ts
+    const hasSchemaFile = entries.some(e => e.endsWith(".ts") && e.includes("schema"));
+    
+    if (!hasSchemaFile) {
+      return {
+        name: "Verify pull output",
+        success: false,
+        error: `Expected schema file in drizzle-pull/, found: ${entries.join(", ") || "<empty>"}`,
+        output: "",
+      };
+    }
+    
+    // Read schema file to verify it contains users table
+    const schemaFile = entries.find(e => e.endsWith(".ts") && e.includes("schema"))!;
+    const schemaContent = await Deno.readTextFile(`${pullDir}/${schemaFile}`);
+    
+    if (!schemaContent.includes("users")) {
+      return {
+        name: "Verify pull output",
+        success: false,
+        error: "Schema file missing 'users' table definition",
+        output: schemaContent.slice(0, 300),
+      };
+    }
+    
+    return {
+      name: "Verify pull output",
+      success: true,
+      output: `Found ${entries.length} file(s): ${entries.join(", ")}`,
+    };
+  } catch (e) {
+    return {
+      name: "Verify pull output",
+      success: false,
+      error: `Failed to read drizzle-pull/: ${e}`,
+      output: "",
+    };
+  }
+}
+
 async function testVersion(
   version: string,
   options: { tests?: TestName[] } = {}
@@ -447,6 +610,73 @@ async function testVersion(
       const verifyResult = await verifyDatabaseSchema(testDir);
       steps.push(verifyResult);
       if (!verifyResult.success) {
+        return {
+          version,
+          steps,
+          duration: Date.now() - startTime,
+          success: false,
+        };
+      }
+    }
+
+    if (testName === "push") {
+      console.log("  🧪 Testing drizzle-kit push...");
+      const pushResult = await testDrizzleKitPush(testDir);
+      steps.push(pushResult);
+      if (!pushResult.success) {
+        return {
+          version,
+          steps,
+          duration: Date.now() - startTime,
+          success: false,
+        };
+      }
+
+      console.log("  🔍 Verifying push database schema...");
+      const verifyPushResult = await verifyPushDatabaseSchema(testDir);
+      steps.push(verifyPushResult);
+      if (!verifyPushResult.success) {
+        return {
+          version,
+          steps,
+          duration: Date.now() - startTime,
+          success: false,
+        };
+      }
+    }
+
+    if (testName === "pull") {
+      // pull requires push to run first to have a DB to introspect
+      if (!testsToRun.includes("push")) {
+        console.log("  🧪 Running prerequisite: drizzle-kit push...");
+        const pushResult = await testDrizzleKitPush(testDir);
+        steps.push(pushResult);
+        if (!pushResult.success) {
+          return {
+            version,
+            steps,
+            duration: Date.now() - startTime,
+            success: false,
+          };
+        }
+      }
+
+      console.log("  🧪 Testing drizzle-kit pull...");
+      const pullResult = await testDrizzleKitPull(testDir);
+      steps.push(pullResult);
+      if (!pullResult.success) {
+        return {
+          version,
+          steps,
+          duration: Date.now() - startTime,
+          success: false,
+        };
+      }
+
+      console.log("  🔍 Verifying pull output...");
+      const verifyPullOutput_ = await verifyPullOutput(testDir);
+      steps.push(verifyPullOutput_);
+      if (!verifyPullOutput_.success) {
         return {
           version,
           steps,
