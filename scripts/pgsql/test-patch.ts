@@ -200,7 +200,7 @@ export default defineConfig({
   await Deno.writeTextFile(`${versionDir}/drizzle-pull.config.ts`, pullConfig);
 
   // Copy DB verification script into the test environment
-  const verifyDbScript = await Deno.readTextFile("scripts/verify-db.ts");
+  const verifyDbScript = await Deno.readTextFile("scripts/pgsql/verify-db.ts");
   await Deno.writeTextFile(`${versionDir}/verify-db.ts`, verifyDbScript);
 
   return versionDir;
