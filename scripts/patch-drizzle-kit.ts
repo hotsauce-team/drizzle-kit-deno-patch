@@ -18,36 +18,7 @@ import { walk } from "@std/fs/walk";
 
 const NODE_MODULES = "./node_modules";
 const PATCH_MARKER = "// DRIZZLE-KIT-DENO-PATCHED-V14";
-
-// Import node:sqlite driver function from JSR package at patch time
-// This extracts the function definition so it can be inlined into bin.cjs
-let nodeSqliteDriverFn: string;
-try {
-  const kit = await import(
-    "jsr:@hotsauce/drizzle-runtime-sqlite@0.1.2/kit-string"
-  );
-  if (typeof kit.drizzleKitDriverBlock === "string") {
-    nodeSqliteDriverFn = kit.drizzleKitDriverBlock;
-  } else {
-    throw new Error("drizzleKitDriverBlock export missing or not a string");
-  }
-} catch (err) {
-  console.error(
-    "Failed to import jsr:@hotsauce/drizzle-runtime-sqlite@0.1.2/kit",
-  );
-  console.error(err instanceof Error ? err.message : err);
-  Deno.exit(1);
-}
-
-// Wrap the function in the SQLITE_NODE check + invocation
-const nodeSqliteBlock = `/* PATCHED: node:sqlite support for Deno/Node 22+ */
-if (process.env.SQLITE_NODE) {
-  ${nodeSqliteDriverFn}
-  const dbPath = normaliseSQLiteUrl(credentials2.url, "better-sqlite");
-  return await createNodeSqlDriver(dbPath, prepareSqliteParams);
-}
-/* END node:sqlite patch */
-`;
+const PATCH_VERSION = 14;
 
 /** Drizzle-kit versions that have been tested with this patch */
 export const SUPPORTED_VERSIONS = ["0.30.6", "0.31.8", "0.31.9"];
@@ -154,7 +125,7 @@ export async function patchDrizzleKit() {
 
   // Check if already patched with current version
   if (content.includes(PATCH_MARKER)) {
-    console.log("✅ drizzle-kit already patched (v12)");
+    console.log(`✅ drizzle-kit already patched (V${PATCH_VERSION})`);
     return;
   }
 
@@ -162,10 +133,42 @@ export async function patchDrizzleKit() {
   const oldPatchMatch = content.match(/\/\/ DRIZZLE-KIT-DENO-PATCHED-V(\d+)/);
   if (oldPatchMatch) {
     console.log(
-      `♻️  Found older patch (v${oldPatchMatch[1]}), will re-patch to v12`,
+      `♻️  Found older patch (V${
+        oldPatchMatch[1]
+      }), will re-patch to V${PATCH_VERSION}`,
     );
     // Note: We proceed to patch over the old version
   }
+
+  // Import node:sqlite driver function from JSR package (lazy load)
+  // This extracts the function definition so it can be inlined into bin.cjs
+  let nodeSqliteDriverFn: string;
+  try {
+    const kit = await import(
+      "jsr:@hotsauce/drizzle-runtime-sqlite@0.1.2/kit-string"
+    );
+    if (typeof kit.drizzleKitDriverBlock === "string") {
+      nodeSqliteDriverFn = kit.drizzleKitDriverBlock;
+    } else {
+      throw new Error("drizzleKitDriverBlock export missing or not a string");
+    }
+  } catch (err) {
+    console.error(
+      "Failed to import jsr:@hotsauce/drizzle-runtime-sqlite@0.1.2/kit-string",
+    );
+    console.error(err instanceof Error ? err.message : err);
+    Deno.exit(1);
+  }
+
+  // Build the node:sqlite block to inject
+  const nodeSqliteBlock = `/* PATCHED: node:sqlite support for Deno/Node 22+ */
+if (process.env.SQLITE_NODE) {
+  ${nodeSqliteDriverFn}
+  const dbPath = normaliseSQLiteUrl(credentials2.url, "better-sqlite");
+  return await createNodeSqlDriver(dbPath, prepareSqliteParams);
+}
+/* END node:sqlite patch */
+`;
 
   // Insert patch marker after shebang (if present) to avoid syntax errors
   if (content.startsWith("#!")) {
@@ -397,10 +400,18 @@ var _getTmpdir = () => { if (!tmpdir) tmpdir = import_node_os2.default.tmpdir();
   // Inject before the @libsql/client check in connectToSQLite
   // ─────────────────────────────────────────────────────────────
   {
+    const pattern = /if \(await checkPackage\("@libsql\/client"\)\) \{/g;
+    const matches = content.match(pattern);
+    if (matches && matches.length > 1) {
+      console.warn(
+        `⚠️  Found ${matches.length} matches for @libsql/client check, expected 1`,
+      );
+      console.warn("   node:sqlite patch may be injected multiple times");
+    }
     const { content: newContent, result } = applyPatch(
       content,
       "node:sqlite support",
-      /if \(await checkPackage\("@libsql\/client"\)\) \{/g,
+      pattern,
       `${nodeSqliteBlock}if (await checkPackage("@libsql/client")) {`,
     );
     content = newContent;

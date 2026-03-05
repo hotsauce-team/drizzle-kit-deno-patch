@@ -1,46 +1,25 @@
 {
   "version": "5",
   "specifiers": {
-    "jsr:@hotsauce/drizzle-runtime-sqlite@*": "0.1.1",
     "jsr:@hotsauce/drizzle-runtime-sqlite@0.1.2": "0.1.2",
     "jsr:@std/cli@1": "1.0.27",
-    "jsr:@std/fmt@^1.0.9": "1.0.9",
-    "jsr:@std/fs@1": "1.0.22",
+    "jsr:@std/fs@1": "1.0.23",
     "jsr:@std/internal@^1.0.12": "1.0.12",
     "jsr:@std/path@^1.1.4": "1.1.4",
     "npm:@electric-sql/pglite@~0.3.15": "0.3.15",
     "npm:@libsql/client@0.14": "0.14.0",
-    "npm:create-vite@latest": "8.3.0",
-    "npm:drizzle-orm@0.45.1": "0.45.1_@electric-sql+pglite@0.3.15_@libsql+client@0.14.0",
     "npm:libsql@~0.4.7": "0.4.7"
   },
   "jsr": {
-    "@hotsauce/drizzle-runtime-sqlite@0.1.1": {
-      "integrity": "ca62bbf39a073a132d51f47509c83b0ea757f632a53619012f1c20d0201e2d05",
-      "dependencies": [
-        "npm:drizzle-orm"
-      ]
-    },
     "@hotsauce/drizzle-runtime-sqlite@0.1.2": {
-      "integrity": "763f30a8586a89afd3c218d97a130eace055e9610a88c89807f918ab948d4720",
-      "dependencies": [
-        "npm:drizzle-orm"
-      ]
+      "integrity": "763f30a8586a89afd3c218d97a130eace055e9610a88c89807f918ab948d4720"
     },
     "@std/cli@1.0.27": {
-      "integrity": "eba97edd0891871a7410e835dd94b3c260c709cca5983df2689c25a71fbe04de",
-      "dependencies": [
-        "jsr:@std/fmt",
-        "jsr:@std/internal"
-      ]
+      "integrity": "eba97edd0891871a7410e835dd94b3c260c709cca5983df2689c25a71fbe04de"
     },
-    "@std/fmt@1.0.9": {
-      "integrity": "2487343e8899fb2be5d0e3d35013e54477ada198854e52dd05ed0422eddcabe0"
-    },
-    "@std/fs@1.0.22": {
-      "integrity": "de0f277a58a867147a8a01bc1b181d0dfa80bfddba8c9cf2bacd6747bcec9308",
+    "@std/fs@1.0.23": {
+      "integrity": "3ecbae4ce4fee03b180fa710caff36bb5adb66631c46a6460aaad49515565a37",
       "dependencies": [
-        "jsr:@std/internal",
         "jsr:@std/path"
       ]
     },
@@ -131,8 +110,8 @@
     "@neon-rs/load@0.0.4": {
       "integrity": "sha512-kTPhdZyTQxB+2wpiRcFWrDcejc4JI6tkPuS7UZCG4l6Zvc5kU/gGQ/ozvHTh1XR5tS+UlfAfGuPajjzQjCiHCw=="
     },
-    "@types/node@25.2.3": {
-      "integrity": "sha512-m0jEgYlYz+mDJZ2+F4v8D1AyQb+QzsNqRuI7xg1VQX/KlKS0qT9r1Mo16yo5F/MtifXFgaofIFsdFMox2SxIbQ==",
+    "@types/node@25.3.3": {
+      "integrity": "sha512-DpzbrH7wIcBaJibpKo9nnSQL0MTRdnWttGyE5haGwK86xgMOkFLp7vEyfQPGLOJh5wNYiJ3V9PmUMDhV9u8kkQ==",
       "dependencies": [
         "undici-types"
       ]
@@ -143,26 +122,11 @@
         "@types/node"
       ]
     },
-    "create-vite@8.3.0": {
-      "integrity": "sha512-58bnPOiwODNTOV60tS/zttmTG1V1xZJThqqvpDPmp0i55fT9i2YsjWdnx7uFy0/FmWRUv4HJeEPlq6zAW3hwTQ==",
-      "bin": true
-    },
     "data-uri-to-buffer@4.0.1": {
       "integrity": "sha512-0R9ikRb668HB7QDxT1vkpuUBtqc53YyAwMwGeUFKRojY/NWKvdZ+9UYtRfGmhqNbRkTSVpMbmyhXipFFv2cb/A=="
     },
     "detect-libc@2.0.2": {
       "integrity": "sha512-UX6sGumvvqSaXgdKGUsgZWqcUyIXZ/vZTrlRT/iobiKhGL0zL4d3osHj3uqllWJK+i+sixDS/3COVEOFbupFyw=="
-    },
-    "drizzle-orm@0.45.1_@electric-sql+pglite@0.3.15_@libsql+client@0.14.0": {
-      "integrity": "sha512-Te0FOdKIistGNPMq2jscdqngBRfBpC8uMFVwqjf6gtTVJHIQ/dosgV/CLBU2N4ZJBsXL5savCba9b0YJskKdcA==",
-      "dependencies": [
-        "@electric-sql/pglite",
-        "@libsql/client"
-      ],
-      "optionalPeers": [
-        "@electric-sql/pglite",
-        "@libsql/client"
-      ]
     },
     "fetch-blob@3.2.0": {
       "integrity": "sha512-7yAQpD2UMJzLi1Dqv7qFYnPbaPx7ZfFK6PiIxQ4PfkGPyNyl2Ugx+a/umUonmKqjhM4DnfbMvdX6otXq83soQQ==",
@@ -213,8 +177,8 @@
     "promise-limit@2.7.0": {
       "integrity": "sha512-7nJ6v5lnJsXwGprnGXga4wx6d1POjvi5Qmf1ivTRxTjH4Z/9Czja/UCMLVmB9N93GeWOU93XaFaEt6jbuoagNw=="
     },
-    "undici-types@7.16.0": {
-      "integrity": "sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw=="
+    "undici-types@7.18.2": {
+      "integrity": "sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w=="
     },
     "web-streams-polyfill@3.3.3": {
       "integrity": "sha512-d2JWLCivmZYTSIoge9MsgFCZrt571BikcWGYkjC1khllbTeDlGqZ2D8vD8E/lJa8WGWbb7Plm8/XJYV7IJHZZw=="

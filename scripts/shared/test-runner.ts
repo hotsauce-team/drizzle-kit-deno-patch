@@ -894,13 +894,17 @@ export async function runTests(config: DialectConfig) {
   });
 
   if (args.help) {
+    // Derive task name from dialect
+    const taskName = config.name === "pgsql"
+      ? "pglite"
+      : config.name === "node-sqlite"
+      ? "node-sqlite"
+      : "libsql";
     console.log(`
 drizzle-kit Patch Test Suite (${config.displayName})
 
 Usage:
-  deno task test:${
-      config.name === "pgsql" ? "pglite" : "libsql"
-    } [options] [versions...]
+  deno task test:${taskName} [options] [versions...]
 
 Options:
   --quick, -q        Quick test (only verify patch applies, skip runtime tests)
@@ -916,18 +920,10 @@ Available Tests:
   pull      Test schema introspection
 
 Examples:
-  deno task test:${
-      config.name === "pgsql" ? "pglite" : "libsql"
-    }                    # Test all supported versions
-  deno task test:${
-      config.name === "pgsql" ? "pglite" : "libsql"
-    } 0.30.6             # Test a specific version
-  deno task test:${
-      config.name === "pgsql" ? "pglite" : "libsql"
-    } --quick            # Quick test all versions
-  deno task test:${
-      config.name === "pgsql" ? "pglite" : "libsql"
-    } --test=push        # Run only push test
+  deno task test:${taskName}                    # Test all supported versions
+  deno task test:${taskName} 0.30.6             # Test a specific version
+  deno task test:${taskName} --quick            # Quick test all versions
+  deno task test:${taskName} --test=push        # Run only push test
 `);
     Deno.exit(0);
   }

@@ -90,7 +90,9 @@ deno task test:node-sqlite --quick
 
 ## Relationship to @hotsauce/drizzle-runtime-sqlite
 
-This patch is independent of `@hotsauce/drizzle-runtime-sqlite`.
+The patch script imports the node:sqlite driver code from
+`jsr:@hotsauce/drizzle-runtime-sqlite/kit-string` at patch time. The driver code
+is then inlined into drizzle-kit's `bin.cjs` - there's no runtime dependency.
 
 - **drizzle-kit** (migrations) - Uses this patch for native node:sqlite support
 - **drizzle-orm** (queries) - Use `@hotsauce/drizzle-runtime-sqlite` for the
