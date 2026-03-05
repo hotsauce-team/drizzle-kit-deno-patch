@@ -144,9 +144,8 @@ export async function patchDrizzleKit() {
   // This extracts the function definition so it can be inlined into bin.cjs
   let nodeSqliteDriverFn: string;
   try {
-    const kit = await import(
-      "jsr:@hotsauce/drizzle-runtime-sqlite@0.1.2/kit-string"
-    );
+    // deno-lint-ignore no-import-prefix
+    const kit = await import("jsr:@hotsauce/drizzle-runtime-sqlite@0.1.2/kit-string");
     if (typeof kit.drizzleKitDriverBlock === "string") {
       nodeSqliteDriverFn = kit.drizzleKitDriverBlock;
     } else {
@@ -163,6 +162,7 @@ export async function patchDrizzleKit() {
   // Build the node:sqlite block to inject
   const nodeSqliteBlock = `/* PATCHED: node:sqlite support for Deno/Node 22+ */
 if (process.env.SQLITE_NODE) {
+  console.log("[drizzle-kit] Using node:sqlite driver (SQLITE_NODE=1)");
   ${nodeSqliteDriverFn}
   const dbPath = normaliseSQLiteUrl(credentials2.url, "better-sqlite");
   return await createNodeSqlDriver(dbPath, prepareSqliteParams);
@@ -398,16 +398,12 @@ var _getTmpdir = () => { if (!tmpdir) tmpdir = import_node_os2.default.tmpdir();
   // ─────────────────────────────────────────────────────────────
   // Patch 5f: Add node:sqlite support via SQLITE_NODE env var
   // Inject before the @libsql/client check in connectToSQLite
+  // Note: Uses non-global regex to only match first occurrence
+  //       (second occurrence is in connectToLibSQL function)
   // ─────────────────────────────────────────────────────────────
   {
-    const pattern = /if \(await checkPackage\("@libsql\/client"\)\) \{/g;
-    const matches = content.match(pattern);
-    if (matches && matches.length > 1) {
-      console.warn(
-        `⚠️  Found ${matches.length} matches for @libsql/client check, expected 1`,
-      );
-      console.warn("   node:sqlite patch may be injected multiple times");
-    }
+    // Non-global regex - only matches first occurrence (in connectToSQLite)
+    const pattern = /if \(await checkPackage\("@libsql\/client"\)\) \{/;
     const { content: newContent, result } = applyPatch(
       content,
       "node:sqlite support",

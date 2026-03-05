@@ -3,21 +3,34 @@
   "specifiers": {
     "jsr:@hotsauce/drizzle-runtime-sqlite@0.1.2": "0.1.2",
     "jsr:@std/cli@1": "1.0.27",
+    "jsr:@std/fmt@^1.0.9": "1.0.9",
     "jsr:@std/fs@1": "1.0.23",
     "jsr:@std/internal@^1.0.12": "1.0.12",
     "jsr:@std/path@^1.1.4": "1.1.4",
-    "npm:@electric-sql/pglite@~0.3.15": "0.3.15"
+    "npm:@electric-sql/pglite@~0.3.15": "0.3.15",
+    "npm:drizzle-orm@0.45.1": "0.45.1_@electric-sql+pglite@0.3.15"
   },
   "jsr": {
     "@hotsauce/drizzle-runtime-sqlite@0.1.2": {
-      "integrity": "763f30a8586a89afd3c218d97a130eace055e9610a88c89807f918ab948d4720"
+      "integrity": "763f30a8586a89afd3c218d97a130eace055e9610a88c89807f918ab948d4720",
+      "dependencies": [
+        "npm:drizzle-orm"
+      ]
     },
     "@std/cli@1.0.27": {
-      "integrity": "eba97edd0891871a7410e835dd94b3c260c709cca5983df2689c25a71fbe04de"
+      "integrity": "eba97edd0891871a7410e835dd94b3c260c709cca5983df2689c25a71fbe04de",
+      "dependencies": [
+        "jsr:@std/fmt",
+        "jsr:@std/internal"
+      ]
+    },
+    "@std/fmt@1.0.9": {
+      "integrity": "2487343e8899fb2be5d0e3d35013e54477ada198854e52dd05ed0422eddcabe0"
     },
     "@std/fs@1.0.23": {
       "integrity": "3ecbae4ce4fee03b180fa710caff36bb5adb66631c46a6460aaad49515565a37",
       "dependencies": [
+        "jsr:@std/internal",
         "jsr:@std/path"
       ]
     },
@@ -34,10 +47,20 @@
   "npm": {
     "@electric-sql/pglite@0.3.15": {
       "integrity": "sha512-Cj++n1Mekf9ETfdc16TlDi+cDDQF0W7EcbyRHYOAeZdsAe8M/FJg18itDTSwyHfar2WIezawM9o0EKaRGVKygQ=="
+    },
+    "drizzle-orm@0.45.1_@electric-sql+pglite@0.3.15": {
+      "integrity": "sha512-Te0FOdKIistGNPMq2jscdqngBRfBpC8uMFVwqjf6gtTVJHIQ/dosgV/CLBU2N4ZJBsXL5savCba9b0YJskKdcA==",
+      "dependencies": [
+        "@electric-sql/pglite"
+      ],
+      "optionalPeers": [
+        "@electric-sql/pglite"
+      ]
     }
   },
   "workspace": {
     "dependencies": [
+      "jsr:@hotsauce/drizzle-runtime-sqlite@0.1.2",
       "jsr:@std/cli@1",
       "jsr:@std/fs@1",
       "npm:@electric-sql/pglite@~0.3.15"

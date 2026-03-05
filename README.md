@@ -128,11 +128,11 @@ Each drizzle-kit command requires specific permissions:
 - **JSR packages in schema** - Your schema files can import from JSR (`@std/*`,
   etc.) since Deno handles the imports natively
 
-- **LibSQL / SQLite support** - Use `@libsql/client` for SQLite databases; set
-  `LIBSQL_JS_NODE=1` for local `file:` URLs. See tests for examples.
-
-- **Node SQLite support** - Use `node:sqlite` instead of `@libsql/client` by
+- **Node SQLite support** _(recommended)_ - Use `node:sqlite` instead of `@libsql/client` by
   setting `SQLITE_NODE=1`. No additional dependencies required.
+
+- **LibSQL / SQLite support** - Alternatively, use `@libsql/client` for SQLite databases; set
+  `LIBSQL_JS_NODE=1` for local `file:` URLs.
 
 ## Using node:sqlite with drizzle-kit
 

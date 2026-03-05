@@ -35,7 +35,7 @@ export async function runCommand(
     cwd,
     stdout: "piped",
     stderr: "piped",
-    env: env ? { ...Deno.env.toObject(), ...env } : undefined,
+    env: env,
   });
 
   const process = command.spawn();

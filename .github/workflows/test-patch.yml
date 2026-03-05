@@ -82,8 +82,59 @@ jobs:
       - name: Run PGlite test for drizzle-kit@${{ matrix.version }}
         run: deno run --allow-read=scripts,deno.jsonc,.test-patch --allow-write=.test-patch --allow-run=deno --allow-net scripts/pgsql/test-patch.ts ${{ matrix.version }}
 
+  test-node-sqlite:
+    name: Test node:sqlite - drizzle-kit@${{ matrix.version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ["0.30.6", "0.31.8", "0.31.9"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Ensure latest Deno
+        run: |
+          INSTALLED=$(deno --version | head -1 | cut -d' ' -f2)
+          LATEST=$(curl -s https://dl.deno.land/release-latest.txt | tr -d 'v')
+          echo "Installed: $INSTALLED"
+          echo "Latest:    $LATEST"
+          if [ "$INSTALLED" != "$LATEST" ]; then
+            echo "Upgrading Deno from $INSTALLED to $LATEST..."
+            deno upgrade
+          fi
+
+      - name: Cache Deno dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/deno
+            ~/.deno
+          key: ${{ runner.os }}-deno-node-sqlite-${{ hashFiles('deno.jsonc', 'deno.lock', 'scripts/patch-drizzle-kit.ts') }}
+
+      - name: Install dependencies
+        run: deno install
+
+      - name: Cache test script dependencies
+        run: deno cache --config deno.jsonc scripts/node-sqlite/test-patch.ts
+
+      - name: Clean test directory
+        run: rm -rf .test-patch-node-sqlite
+
+      - name: Clear drizzle-kit from npm cache
+        run: rm -rf ~/.cache/deno/npm/registry.npmjs.org/drizzle-kit
+
+      - name: Run node:sqlite test for drizzle-kit@${{ matrix.version }}
+        run: deno run --allow-net=jsr.io --allow-read=scripts,deno.jsonc,.test-patch-node-sqlite --allow-write=.test-patch-node-sqlite --allow-run=deno scripts/node-sqlite/test-patch.ts ${{ matrix.version }}
+
   # ARCHIVED - test-libsql job removed, use node-sqlite instead
-  # LibSQL tests are in scripts/-archive-libsql/ (planned for removal)
+  # LibSQL tests are in scripts/archive-libsql/ (planned for removal)
 
   # Optional: Run quick tests for all versions in a single job
   test-patch-quick:
@@ -120,15 +171,17 @@ jobs:
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [test-pglite]
+    needs: [test-pglite, test-node-sqlite]
     if: always()
 
     steps:
       - name: Check test results
         run: |
           PGLITE="${{ needs.test-pglite.result }}"
+          NODE_SQLITE="${{ needs.test-node-sqlite.result }}"
           echo "PGlite tests: $PGLITE"
-          if [[ "$PGLITE" == "success" ]]; then
+          echo "node:sqlite tests: $NODE_SQLITE"
+          if [[ "$PGLITE" == "success" && "$NODE_SQLITE" == "success" ]]; then
             echo "✅ All patch compatibility tests passed!"
             exit 0
           else
