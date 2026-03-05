@@ -56,10 +56,15 @@ export default defineConfig({
 `;
 
 // Verify pull schema contains expected SQLite structure
-function verifyPullSchema(content: string): { success: boolean; error?: string } {
+function verifyPullSchema(
+  content: string,
+): { success: boolean; error?: string } {
   // Should have users table definition
   if (!content.includes("users")) {
-    return { success: false, error: "Schema file missing 'users' table definition" };
+    return {
+      success: false,
+      error: "Schema file missing 'users' table definition",
+    };
   }
 
   // Should be SQLite (not PostgreSQL)
@@ -69,7 +74,10 @@ function verifyPullSchema(content: string): { success: boolean; error?: string }
 
   // Should have sqliteTable
   if (!content.includes("sqliteTable") && !content.includes("sqlite-core")) {
-    return { success: false, error: "Schema should use sqliteTable from drizzle-orm/sqlite-core" };
+    return {
+      success: false,
+      error: "Schema should use sqliteTable from drizzle-orm/sqlite-core",
+    };
   }
 
   return { success: true };

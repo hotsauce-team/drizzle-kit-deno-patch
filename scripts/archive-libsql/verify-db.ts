@@ -8,7 +8,7 @@ import { createClient } from "@libsql/client/node";
 
 function usage(): never {
   console.error(
-    "Usage: deno run --allow-read --allow-write --allow-ffi scripts/verify-db-sqlite.ts [--db ./data.db] [--table users] [--columns id,name] [--skip-migrations]"
+    "Usage: deno run --allow-read --allow-write --allow-ffi scripts/verify-db-sqlite.ts [--db ./data.db] [--table users] [--columns id,name] [--skip-migrations]",
   );
   Deno.exit(2);
 }
@@ -43,7 +43,7 @@ const client = createClient({
 
 // Table existence via sqlite_master
 const tablesRes = await client.execute(
-  "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+  "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
 );
 const tables = tablesRes.rows.map((row) => String(row.name));
 
@@ -53,7 +53,7 @@ if (!tables.includes(table)) {
     "❌ Expected table " +
       table +
       " to exist; found: " +
-      (tables.length ? tables.join(", ") : "<none>")
+      (tables.length ? tables.join(", ") : "<none>"),
   );
 }
 
@@ -65,7 +65,9 @@ for (const expected of expectedColumns) {
   if (!cols.includes(expected)) {
     client.close();
     fail(
-      `❌ Expected column "${expected}" in table ${table}; found: ${cols.join(", ")}`
+      `❌ Expected column "${expected}" in table ${table}; found: ${
+        cols.join(", ")
+      }`,
     );
   }
 }
@@ -75,12 +77,12 @@ if (!skipMigrations) {
   if (!tables.includes("__drizzle_migrations")) {
     client.close();
     fail(
-      "❌ Expected __drizzle_migrations table to exist (use --skip-migrations to skip this check)"
+      "❌ Expected __drizzle_migrations table to exist (use --skip-migrations to skip this check)",
     );
   }
 
   const migrationsRes = await client.execute(
-    "SELECT COUNT(*) as count FROM __drizzle_migrations"
+    "SELECT COUNT(*) as count FROM __drizzle_migrations",
   );
   const migrationCount = Number(migrationsRes.rows[0]?.count ?? 0);
   if (migrationCount === 0) {

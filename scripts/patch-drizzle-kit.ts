@@ -11,12 +11,14 @@
  * 7. Defers homedir/tmpdir calls - avoids permission prompts at load time
  * 8. Stubs test-only env vars - avoids permission errors for __MINIMATCH_TESTING_PLATFORM__ and TEST_CONFIG_PATH_PREFIX
  * 9. Uses @libsql/client/node via LIBSQL_JS_NODE env var - enables file: URL support for local SQLite
+ * 10. Adds native node:sqlite support via SQLITE_NODE env var - uses node:sqlite (Deno 2.x / Node 22+)
  */
 
 import { walk } from "@std/fs/walk";
 
 const NODE_MODULES = "./node_modules";
-const PATCH_MARKER = "// DRIZZLE-KIT-DENO-PATCHED-V12";
+const PATCH_MARKER = "// DRIZZLE-KIT-DENO-PATCHED-V14";
+const PATCH_VERSION = 14;
 
 /** Drizzle-kit versions that have been tested with this patch */
 export const SUPPORTED_VERSIONS = ["0.30.6", "0.31.8", "0.31.9"];
@@ -123,7 +125,7 @@ export async function patchDrizzleKit() {
 
   // Check if already patched with current version
   if (content.includes(PATCH_MARKER)) {
-    console.log("✅ drizzle-kit already patched (v12)");
+    console.log(`✅ drizzle-kit already patched (V${PATCH_VERSION})`);
     return;
   }
 
@@ -131,10 +133,42 @@ export async function patchDrizzleKit() {
   const oldPatchMatch = content.match(/\/\/ DRIZZLE-KIT-DENO-PATCHED-V(\d+)/);
   if (oldPatchMatch) {
     console.log(
-      `♻️  Found older patch (v${oldPatchMatch[1]}), will re-patch to v12`,
+      `♻️  Found older patch (V${
+        oldPatchMatch[1]
+      }), will re-patch to V${PATCH_VERSION}`,
     );
     // Note: We proceed to patch over the old version
   }
+
+  // Import node:sqlite driver function from JSR package (lazy load)
+  // This extracts the function definition so it can be inlined into bin.cjs
+  let nodeSqliteDriverFn: string;
+  try {
+    // deno-lint-ignore no-import-prefix
+    const kit = await import("jsr:@hotsauce/drizzle-runtime-sqlite@0.1.2/kit-string");
+    if (typeof kit.drizzleKitDriverBlock === "string") {
+      nodeSqliteDriverFn = kit.drizzleKitDriverBlock;
+    } else {
+      throw new Error("drizzleKitDriverBlock export missing or not a string");
+    }
+  } catch (err) {
+    console.error(
+      "Failed to import jsr:@hotsauce/drizzle-runtime-sqlite@0.1.2/kit-string",
+    );
+    console.error(err instanceof Error ? err.message : err);
+    Deno.exit(1);
+  }
+
+  // Build the node:sqlite block to inject
+  const nodeSqliteBlock = `/* PATCHED: node:sqlite support for Deno/Node 22+ */
+if (process.env.SQLITE_NODE) {
+  console.log("[drizzle-kit] Using node:sqlite driver (SQLITE_NODE=1)");
+  ${nodeSqliteDriverFn}
+  const dbPath = normaliseSQLiteUrl(credentials2.url, "better-sqlite");
+  return await createNodeSqlDriver(dbPath, prepareSqliteParams);
+}
+/* END node:sqlite patch */
+`;
 
   // Insert patch marker after shebang (if present) to avoid syntax errors
   if (content.startsWith("#!")) {
@@ -356,6 +390,25 @@ var _getTmpdir = () => { if (!tmpdir) tmpdir = import_node_os2.default.tmpdir();
       "libsql client env switch",
       /const \{ createClient \} = await import\("@libsql\/client"\);/g,
       `const { createClient } = await import(process.env.LIBSQL_JS_NODE ? "@libsql/client/node" : "@libsql/client"); /* PATCHED: LIBSQL_JS_NODE=1 for file: URLs */`,
+    );
+    content = newContent;
+    results.push(result);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // Patch 5f: Add node:sqlite support via SQLITE_NODE env var
+  // Inject before the @libsql/client check in connectToSQLite
+  // Note: Uses non-global regex to only match first occurrence
+  //       (second occurrence is in connectToLibSQL function)
+  // ─────────────────────────────────────────────────────────────
+  {
+    // Non-global regex - only matches first occurrence (in connectToSQLite)
+    const pattern = /if \(await checkPackage\("@libsql\/client"\)\) \{/;
+    const { content: newContent, result } = applyPatch(
+      content,
+      "node:sqlite support",
+      pattern,
+      `${nodeSqliteBlock}if (await checkPackage("@libsql/client")) {`,
     );
     content = newContent;
     results.push(result);
