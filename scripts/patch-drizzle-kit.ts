@@ -17,16 +17,18 @@
 import { walk } from "@std/fs/walk";
 
 const NODE_MODULES = "./node_modules";
-const PATCH_MARKER = "// DRIZZLE-KIT-DENO-PATCHED-V14";
-const PATCH_VERSION = 14;
+const PATCH_MARKER = "// DRIZZLE-KIT-DENO-PATCHED-V15";
+const PATCH_VERSION = 15;
 
 /** Drizzle-kit versions that have been tested with this patch */
-export const SUPPORTED_VERSIONS = ["0.30.6", "0.31.8", "0.31.9"];
+export const SUPPORTED_VERSIONS = ["0.30.6", "0.31.8", "0.31.9", "0.31.10"];
 
 interface PatchResult {
   name: string;
   success: boolean;
   error?: string;
+  /** Pattern was not present in this drizzle-kit version (treated as success). */
+  skipped?: boolean;
 }
 
 async function findDrizzleKitBin(): Promise<
@@ -53,6 +55,7 @@ function applyPatch(
   name: string,
   searchPattern: RegExp | string,
   replacement: string | ((match: string, ...args: string[]) => string),
+  options: { skipForVersions?: readonly string[]; version?: string } = {},
 ): { content: string; result: PatchResult } {
   const pattern = typeof searchPattern === "string"
     ? new RegExp(escapeRegex(searchPattern), "g")
@@ -62,6 +65,20 @@ function applyPatch(
   pattern.lastIndex = 0;
 
   if (!pattern.test(content)) {
+    const versionAllowsSkip = options.version !== undefined &&
+      options.skipForVersions?.includes(options.version);
+    if (versionAllowsSkip) {
+      return {
+        content,
+        result: {
+          name,
+          success: true,
+          skipped: true,
+          error:
+            `Pattern not present in drizzle-kit@${options.version} (expected)`,
+        },
+      };
+    }
     return {
       content,
       result: { name, success: false, error: "Pattern not found" },
@@ -181,6 +198,7 @@ if (process.env.SQLITE_NODE) {
 
   // ─────────────────────────────────────────────────────────────
   // Patch 1: walkForTsConfig - disable directory traversal
+  // (Removed in drizzle-kit 0.31.10 along with esbuild-register)
   // ─────────────────────────────────────────────────────────────
   {
     const { content: newContent, result } = applyPatch(
@@ -189,6 +207,7 @@ if (process.env.SQLITE_NODE) {
       /function walkForTsConfig\(directory[^)]*\)\s*\{/g,
       `function walkForTsConfig(directory, readdirSync) {
   return void 0; // PATCHED: disabled for Deno`,
+      { skipForVersions: ["0.31.10"], version },
     );
     content = newContent;
     results.push(result);
@@ -197,6 +216,7 @@ if (process.env.SQLITE_NODE) {
   // ─────────────────────────────────────────────────────────────
   // Patch 2: recusivelyResolveSync - disable parent traversal
   // (Note: typo "recusively" is in original drizzle-kit code)
+  // (Removed in drizzle-kit 0.31.10 along with esbuild-register)
   // ─────────────────────────────────────────────────────────────
   {
     const { content: newContent, result } = applyPatch(
@@ -205,6 +225,7 @@ if (process.env.SQLITE_NODE) {
       /recusivelyResolveSync\(options\)\s*\{/g,
       `recusivelyResolveSync(options) {
     return null; // PATCHED: disabled for Deno`,
+      { skipForVersions: ["0.31.10"], version },
     );
     content = newContent;
     results.push(result);
@@ -416,6 +437,11 @@ var _getTmpdir = () => { if (!tmpdir) tmpdir = import_node_os2.default.tmpdir();
 
   // ─────────────────────────────────────────────────────────────
   // Patch 6: safeRegister - disable esbuild
+  // Only applies to drizzle-kit <= 0.31.9 (zero-arg signature).
+  // In 0.31.10+ safeRegister takes a callback `async (fn) => ...` and
+  // already short-circuits tsx registration when running under Deno, so
+  // no patch is needed — and we MUST NOT touch it because the callback
+  // wraps the require() → import() body.
   // ─────────────────────────────────────────────────────────────
   {
     const { content: newContent, result } = applyPatch(
@@ -424,6 +450,7 @@ var _getTmpdir = () => { if (!tmpdir) tmpdir = import_node_os2.default.tmpdir();
       /safeRegister\s*=\s*async\s*\(\)\s*=>\s*\{/g,
       `safeRegister = async () => {
     return { unregister: () => {} }; // PATCHED: esbuild disabled for Deno`,
+      { skipForVersions: ["0.31.10"], version },
     );
     content = newContent;
     results.push(result);
@@ -479,7 +506,9 @@ var _getTmpdir = () => { if (!tmpdir) tmpdir = import_node_os2.default.tmpdir();
   console.log("\nPatch results:");
   let hasFailure = false;
   for (const result of results) {
-    if (result.success) {
+    if (result.skipped) {
+      console.log(`  ∘ ${result.name}: ${result.error ?? "skipped"}`);
+    } else if (result.success) {
       console.log(`  ✓ ${result.name}`);
     } else {
       console.log(`  ✗ ${result.name}: ${result.error}`);
@@ -489,7 +518,6 @@ var _getTmpdir = () => { if (!tmpdir) tmpdir = import_node_os2.default.tmpdir();
 
   // Require at least the critical patches
   const criticalPatches = [
-    "safeRegister (disable esbuild)",
     "config loading (require → import)",
     "schema loading (require → import)",
   ];

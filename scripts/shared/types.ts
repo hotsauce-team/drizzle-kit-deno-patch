@@ -13,7 +13,7 @@ export const AVAILABLE_TESTS = [
 export type TestName = (typeof AVAILABLE_TESTS)[number];
 
 // Supported drizzle-kit versions
-export const SUPPORTED_VERSIONS = ["0.30.6", "0.31.8", "0.31.9"];
+export const SUPPORTED_VERSIONS = ["0.30.6", "0.31.8", "0.31.9", "0.31.10"];
 
 export interface StepResult {
   name: string;

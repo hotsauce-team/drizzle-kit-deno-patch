@@ -49,7 +49,7 @@ Or add to your `deno.jsonc` tasks:
 ```jsonc
 {
   "tasks": {
-    "patch": "deno run --allow-read=./node_modules --allow-write=./node_modules/.deno/drizzle-kit@0.31.9 jsr:@hotsauce/drizzle-kit-deno-patch"
+    "patch": "deno run --allow-read=./node_modules --allow-write=./node_modules/.deno/drizzle-kit@0.31.10 jsr:@hotsauce/drizzle-kit-deno-patch"
   }
 }
 ```
@@ -242,7 +242,7 @@ This provides fine-grained control over:
 The patch script:
 
 1. **Finds** the drizzle-kit binary in `node_modules/`
-2. **Checks** the version (tested with 0.30.6, 0.31.8, 0.31.9)
+2. **Checks** the version (tested with 0.30.6, 0.31.8, 0.31.9, 0.31.10)
 3. **Applies patches** using regex replacements
 4. **Marks** the file as patched to avoid re-patching
 5. **Reports** which patches succeeded or failed
@@ -290,7 +290,8 @@ deno task db:generate
 
 - 0.30.6
 - 0.31.8
-- 0.31.9 (recommended)
+- 0.31.9
+- 0.31.10 (recommended)
 
 The patch script will warn but attempt to patch other versions.
 
