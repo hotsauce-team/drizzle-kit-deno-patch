@@ -82,7 +82,7 @@ SQLITE_NODE=1 deno run \
 deno task test:node-sqlite
 
 # Test a specific version
-deno task test:node-sqlite 0.31.9
+deno task test:node-sqlite 0.31.10
 
 # Quick test (patch only)
 deno task test:node-sqlite --quick

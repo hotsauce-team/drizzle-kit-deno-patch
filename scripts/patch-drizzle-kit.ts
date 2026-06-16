@@ -516,8 +516,12 @@ var _getTmpdir = () => { if (!tmpdir) tmpdir = import_node_os2.default.tmpdir();
     }
   }
 
-  // Require at least the critical patches
+  // Require at least the critical patches.
+  // Note: `safeRegister` is skipped (success: true) for versions listed in
+  // `skipForVersions` (e.g. 0.31.10), so it remains in this list to guard
+  // against silent regressions on older versions where it's still required.
   const criticalPatches = [
+    "safeRegister (disable esbuild)",
     "config loading (require → import)",
     "schema loading (require → import)",
   ];

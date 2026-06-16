@@ -295,6 +295,37 @@ deno task db:generate
 
 The patch script will warn but attempt to patch other versions.
 
+## A note on `tsx` and `esbuild` in your lockfile
+
+Starting in `drizzle-kit@0.31.10`, drizzle-kit declares `tsx` (and transitively
+`esbuild`) as runtime dependencies in its `package.json`, replacing the older
+`esbuild-register` chain. After `deno install`, you'll see many
+`@esbuild/<platform>@*` entries appear in `deno.lock` and a `tsx` package on
+disk.
+
+**This is expected and harmless under Deno.** None of that code executes:
+
+- `tsx` is bundled inside drizzle-kit's `bin.cjs` as a lazy CommonJS factory.
+- The single callsite that would invoke it (`ensureTsxRegistered`) checks
+  `typeof globalThis.Deno !== "undefined"` and returns early under Deno, so
+  the factory body — and the `require("esbuild")` inside it — never runs.
+- Our patch rewrites the `require()` calls that load your config/schema into
+  native `await import()`, so Deno handles TypeScript directly.
+
+You can verify this empirically: the included tests run drizzle-kit without
+granting `--allow-ffi` or `--allow-run`, both of which esbuild's native binary
+requires. If esbuild were actually loading, the tests would fail with a
+permissions error.
+
+The lockfile bloat is purely metadata: `tsx` declares every
+`@esbuild/<platform>` binary as an `optionalDependency`, so the lockfile —
+which must be platform-agnostic — records all of them even though only the
+binary for your current platform is materialized on disk.
+
+If you want this fixed upstream, the right ask is for drizzle-kit to mark
+`tsx`/`esbuild` as `optionalDependencies` so Deno/Bun users don't resolve them
+at all.
+
 ## Testing
 
 A comprehensive test suite verifies the patch works across all supported
@@ -333,7 +364,7 @@ deno task test
 ### Test a specific version
 
 ```bash
-deno task test 0.31.9
+deno task test 0.31.10
 ```
 
 ### Quick test (patch only, no runtime tests)
