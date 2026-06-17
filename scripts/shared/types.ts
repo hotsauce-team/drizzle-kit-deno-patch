@@ -2,6 +2,9 @@
  * Shared types for drizzle-kit patch test suite.
  */
 
+// Re-export from the authoritative source (patch script)
+export { SUPPORTED_VERSIONS } from "../patch-drizzle-kit.ts";
+
 // Available command tests
 export const AVAILABLE_TESTS = [
   "help",
@@ -11,9 +14,6 @@ export const AVAILABLE_TESTS = [
   "pull",
 ] as const;
 export type TestName = (typeof AVAILABLE_TESTS)[number];
-
-// Supported drizzle-kit versions
-export const SUPPORTED_VERSIONS = ["0.30.6", "0.31.8", "0.31.9"];
 
 export interface StepResult {
   name: string;
@@ -107,12 +107,12 @@ export interface DialectConfig {
    * Critical patch patterns to verify (optional, pgsql only).
    * Each pattern must be present in bin.cjs for test to pass.
    */
-  criticalPatches?: Array<{ name: string; pattern: string }>;
+  criticalPatches?: Array<{ name: string; pattern: string; skipForVersions?: string[] }>;
 
   /**
    * Optional patch patterns to check (non-critical).
    */
-  optionalPatches?: Array<{ name: string; pattern: string }>;
+  optionalPatches?: Array<{ name: string; pattern: string; skipForVersions?: string[] }>;
 
   /**
    * Arguments for verify-db.ts per command.

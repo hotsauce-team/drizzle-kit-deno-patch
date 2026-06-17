@@ -1,7 +1,7 @@
 {
   // JSR package configuration
   "name": "@hotsauce/drizzle-kit-deno-patch",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "exports": "./mod.ts",
   "publish": {
     "include": [

@@ -96,29 +96,28 @@ console.log("Created users and posts tables via raw SQL");
 await db.close();
 `;
 
-// Critical patches that MUST be present
-const CRITICAL_PATCHES = [
+// Patches that MUST be present (unless skipped for specific versions)
+const PATCHES = [
   {
     name: "walkForTsConfig",
     pattern: "return void 0; // PATCHED: disabled for Deno",
+    skipForVersions: ["0.31.10"],
   },
   {
     name: "safeRegister",
     pattern:
       "return { unregister: () => {} }; // PATCHED: esbuild disabled for Deno",
+    skipForVersions: ["0.31.10"],
   },
   { name: "config loading", pattern: "// PATCHED: import for Deno TS support" },
   {
     name: "CLI exit handler",
     pattern: "setTimeout(() => process.exit(0), 50)",
   },
-];
-
-// Non-critical patches (may not be present in all versions)
-const OPTIONAL_PATCHES = [
   {
     name: "recusivelyResolveSync",
     pattern: "return null; // PATCHED: disabled for Deno",
+    skipForVersions: ["0.31.10"],
   },
   {
     name: "_supportsColor stub",
@@ -257,9 +256,8 @@ export const pgsqlConfig: DialectConfig = {
     setupPullDb: ["--allow-read=.,./node_modules", "--allow-write=./data-pull"],
   },
 
-  patchMarker: "DRIZZLE-KIT-DENO-PATCHED-V14",
-  criticalPatches: CRITICAL_PATCHES,
-  optionalPatches: OPTIONAL_PATCHES,
+  patchMarker: "DRIZZLE-KIT-DENO-PATCHED-V15",
+  criticalPatches: PATCHES,
 
   verifyArgs: {
     migrate: ["--db", "./data"],
