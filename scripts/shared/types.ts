@@ -107,12 +107,12 @@ export interface DialectConfig {
    * Critical patch patterns to verify (optional, pgsql only).
    * Each pattern must be present in bin.cjs for test to pass.
    */
-  criticalPatches?: Array<{ name: string; pattern: string }>;
+  criticalPatches?: Array<{ name: string; pattern: string; skipForVersions?: string[] }>;
 
   /**
    * Optional patch patterns to check (non-critical).
    */
-  optionalPatches?: Array<{ name: string; pattern: string }>;
+  optionalPatches?: Array<{ name: string; pattern: string; skipForVersions?: string[] }>;
 
   /**
    * Arguments for verify-db.ts per command.

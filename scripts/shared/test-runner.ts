@@ -227,8 +227,9 @@ async function verifyPatchMarker(
 
 async function verifyAllPatches(
   testDir: string,
-  criticalPatches: Array<{ name: string; pattern: string }>,
-  optionalPatches: Array<{ name: string; pattern: string }>,
+  criticalPatches: Array<{ name: string; pattern: string; skipForVersions?: string[] }>,
+  optionalPatches: Array<{ name: string; pattern: string; skipForVersions?: string[] }>,
+  version: string,
 ): Promise<StepResult> {
   try {
     for await (
@@ -243,17 +244,22 @@ async function verifyAllPatches(
         const missingCritical: string[] = [];
         const missingOptional: string[] = [];
         const foundPatches: string[] = [];
+        const skippedPatches: string[] = [];
 
-        for (const { name, pattern } of criticalPatches) {
-          if (content.includes(pattern)) {
+        for (const { name, pattern, skipForVersions } of criticalPatches) {
+          if (skipForVersions?.includes(version)) {
+            skippedPatches.push(name);
+          } else if (content.includes(pattern)) {
             foundPatches.push(name);
           } else {
             missingCritical.push(name);
           }
         }
 
-        for (const { name, pattern } of optionalPatches) {
-          if (content.includes(pattern)) {
+        for (const { name, pattern, skipForVersions } of optionalPatches) {
+          if (skipForVersions?.includes(version)) {
+            skippedPatches.push(name);
+          } else if (content.includes(pattern)) {
             foundPatches.push(name);
           } else {
             missingOptional.push(name);
@@ -267,17 +273,25 @@ async function verifyAllPatches(
             error: `Missing critical patches: ${missingCritical.join(", ")}`,
             output: `Found: ${foundPatches.join(", ")}\nMissing optional: ${
               missingOptional.join(", ")
-            }`,
+            }${skippedPatches.length > 0 ? `\nSkipped for ${version}: ${skippedPatches.join(", ")}` : ""}`,
           };
         }
+
+        const appliedCritical = criticalPatches.length - skippedPatches.filter(s => 
+          criticalPatches.some(p => p.name === s)
+        ).length;
 
         return {
           name: "Verify all patches applied",
           success: true,
           output:
-            `Critical: ${criticalPatches.length}/${criticalPatches.length}, Optional: ${
-              optionalPatches.length - missingOptional.length
-            }/${optionalPatches.length}`,
+            `Critical: ${appliedCritical}/${appliedCritical}, Optional: ${
+              optionalPatches.length - missingOptional.length - skippedPatches.filter(s => 
+                optionalPatches.some(p => p.name === s)
+              ).length
+            }/${optionalPatches.length - skippedPatches.filter(s => 
+              optionalPatches.some(p => p.name === s)
+            ).length}${skippedPatches.length > 0 ? `, Skipped: ${skippedPatches.length}` : ""}`,
         };
       }
     }
@@ -822,6 +836,7 @@ async function testVersion(
       testDir,
       config.criticalPatches,
       config.optionalPatches || [],
+      version,
     );
     steps.push(allPatchesResult);
     if (!allPatchesResult.success) {
