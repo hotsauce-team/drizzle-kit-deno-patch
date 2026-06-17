@@ -152,9 +152,6 @@ const PATCHES = [
   },
 ];
 
-// Non-critical patches (may not be present in all versions)
-const OPTIONAL_PATCHES: Array<{ name: string; pattern: string; skipForVersions?: string[] }> = [];
-
 // Verify pull schema contains expected PostgreSQL structure
 function verifyPullSchema(
   content: string,
@@ -261,7 +258,6 @@ export const pgsqlConfig: DialectConfig = {
 
   patchMarker: "DRIZZLE-KIT-DENO-PATCHED-V15",
   criticalPatches: PATCHES,
-  optionalPatches: OPTIONAL_PATCHES,
 
   verifyArgs: {
     migrate: ["--db", "./data"],

@@ -2,6 +2,9 @@
  * Shared types for drizzle-kit patch test suite.
  */
 
+// Re-export from the authoritative source (patch script)
+export { SUPPORTED_VERSIONS } from "../patch-drizzle-kit.ts";
+
 // Available command tests
 export const AVAILABLE_TESTS = [
   "help",
@@ -11,9 +14,6 @@ export const AVAILABLE_TESTS = [
   "pull",
 ] as const;
 export type TestName = (typeof AVAILABLE_TESTS)[number];
-
-// Supported drizzle-kit versions
-export const SUPPORTED_VERSIONS = ["0.30.6", "0.31.8", "0.31.9", "0.31.10"];
 
 export interface StepResult {
   name: string;
